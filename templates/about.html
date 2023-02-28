@@ -1,0 +1,26 @@
+{% extends 'layout.html' %}
+
+{% block title %}
+About
+{% endblock %}
+
+{% block content %}
+<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Animi, aperiam, blanditiis corporis impedit ipsa iure libero minima nam quod recusandae suscipit temporibus, vel. Deserunt ea incidunt ipsum labore quibusdam ut!</p>
+<form method="post">
+    {{ form.csrf_token }}
+    {% for field in form if field.name != 'csrf_token' %}
+        <div>
+            {{ field(placeholder=field.label.text) }}
+            {% for error in field.errors %}
+                <div class="alert alert-danger">{{ error }}</div>
+            {% endfor %}
+        </div>
+    {% endfor %}
+</form>
+{% if success %}
+<div class="alert alert-success">
+    УРА!!!
+</div>
+{% endif %}
+{% endblock %}
+
