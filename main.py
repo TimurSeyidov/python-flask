@@ -1,10 +1,11 @@
 import datetime
-from flask import Flask, render_template, redirect, request, abort
+from flask import Flask, render_template, redirect, request, abort, make_response, jsonify
 from flask_login import LoginManager, login_user, current_user, logout_user, login_required
 from core.models import db_session
 from core.models.User import User
 from core.models.News import News
 from core.forms import RegisterForm, LoginForm, NewsForm
+from api.news import main as NewsApiMain
 
 app = Flask(
     __name__,
@@ -18,6 +19,16 @@ app.config['SESSION_COOKIE_NAME'] = 'blabla_session'
 app.config['SESSION_COOKIE_SECURE'] = True
 login_manager = LoginManager()
 login_manager.init_app(app)
+
+
+@app.errorhandler(404)
+def not_found(error):
+    return make_response(jsonify({'error': 'Not found'}), 404)
+
+
+@app.errorhandler(400)
+def bad_request(_):
+    return make_response(jsonify({'error': 'Bad Request'}), 400)
 
 
 @login_manager.user_loader
@@ -107,7 +118,9 @@ def register():
     if current_user.is_authenticated:
         return redirect(request.referrer or '/')
     form = RegisterForm()
-    if form.validate_on_submit():
+    is_v = form.validate_on_submit()
+    print(is_v)
+    if is_v:
         try:
             if form.password.data != form.password_again.data:
                 raise Exception('Пароли не совпадают')
@@ -115,6 +128,7 @@ def register():
             user = db_sess.query(User)\
                 .filter(User.email.like(form.email.data))\
                 .first()
+            print('----', user)
             if user:
                 raise Exception('Такой пользователь уже есть')
             user = User(
@@ -122,11 +136,13 @@ def register():
                 email=form.email.data,
                 about=form.about.data
             )
+            print(user)
             user.set_password(form.password.data)
             db_sess.add(user)
             db_sess.commit()
             return redirect('/login')
         except Exception as e:
+            print(e)
             return render_template(
                 'register.html',
                 form=form,
@@ -160,10 +176,13 @@ def logout():
     return redirect('/')
 
 
+
+
+
 def main():
     db_session.global_init('./db/test.db')
+    app.register_blueprint(NewsApiMain.blueprint)
     app.run()
-
 
 if __name__ == '__main__':
     main()
